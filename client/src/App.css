@@ -150,3 +150,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   border-radius: 6px;
   font-size: 13px;
 }
+
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.card p { margin: 0; }
+.card-value { font-size: 20px; font-weight: 600; margin-top: 4px !important; font-variant-numeric: tabular-nums; }
+.pnl-up { color: var(--green); }
+.pnl-down { color: var(--red); }
+.section-title { font-size: 14px; font-weight: 600; margin: 24px 0 10px; }
+.badge-yes { color: var(--green); }
+.badge-no { color: var(--red); }

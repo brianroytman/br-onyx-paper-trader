@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { AuthPanel } from './components/AuthPanel';
 import { Markets } from './pages/Markets';
@@ -12,13 +12,18 @@ export default function App() {
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
+  const refreshAccount = useCallback(() => {
+    if (!auth.currentUser) return;
+    void api<Account>('/me').then(setAccount).catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setAccount(null);
       return;
     }
-    void api<Account>('/me').then(setAccount).catch(() => setAccount(null));
-  }, [user]);
+    refreshAccount();
+  }, [user, refreshAccount]);
 
   return (
     <div className="app">
@@ -31,7 +36,11 @@ export default function App() {
         <AuthPanel user={user} account={account} />
       </header>
       <main>
-        <Markets />
+        <Markets
+          authed={!!user}
+          cashCents={account?.cashCents ?? null}
+          onFilled={refreshAccount}
+        />
       </main>
     </div>
   );

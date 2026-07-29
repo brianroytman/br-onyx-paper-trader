@@ -6,11 +6,13 @@ import { AppService } from './app.service';
 import { HealthController } from './health.controller';
 import { AuthModule } from './auth/auth.module';
 import { MarketsModule } from './markets/markets.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
     AuthModule,
     MarketsModule,
+    OrdersModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'client', 'dist'),
       exclude: ['/api/{*path}'],
