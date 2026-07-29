@@ -6,3 +6,9 @@ src/generated/
 *.tsbuildinfo
 /.env
 .DS_Store
+
+# Editor and assistant tooling
+.agents/
+.claude/
+.windsurf/
+skills-lock.json

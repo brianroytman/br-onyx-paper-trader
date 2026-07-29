@@ -59,7 +59,11 @@ export function MarketsTable({ markets, onBuy, disabled }: Props) {
             <PriceCell cents={m.yesPriceCents} />
             <PriceCell cents={m.noPriceCents} />
             <td className="actions">
-              {m.tradable && onBuy ? (
+              {!m.tradable ? (
+                <span className="muted">
+                  {m.status !== 'open' ? 'Market closed' : 'No price'}
+                </span>
+              ) : onBuy ? (
                 <>
                   <button disabled={disabled} onClick={() => onBuy(m, 'YES')}>
                     Buy yes
@@ -68,11 +72,7 @@ export function MarketsTable({ markets, onBuy, disabled }: Props) {
                     Buy no
                   </button>
                 </>
-              ) : (
-                <span className="muted">
-                  {m.status !== 'open' ? 'Market closed' : 'No price'}
-                </span>
-              )}
+              ) : null}
             </td>
           </tr>
         ))}
