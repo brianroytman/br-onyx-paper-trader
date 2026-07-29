@@ -124,8 +124,22 @@ Three tables. **All monetary values are integer cents — never floating point.*
 | `GET` | `/api/me` | ✅ | Account summary |
 | `GET` | `/api/health` | — | Liveness |
 
-Market browsing is intentionally public — prediction-market venues let visitors look before
-signing up, and it keeps the read path free of auth concerns.
+Market browsing is public. Prediction-market venues let visitors look before signing up, and
+it keeps the read path free of auth concerns.
+
+Upstream, we read three Onyx endpoints and write to none:
+
+| Onyx endpoint | Used for |
+|---|---|
+| `GET /markets?limit&offset` | The full catalog. Pages at 1,000 and returns a bare array with no total, so we page until a short one. No sport filter is applied — we fetch everything. |
+| `GET /markets/{symbol}/prices` | The live quote when pricing a fill |
+| `POST /orders` | **Never called.** This is a paper trader. |
+
+Prices refresh every three seconds in the UI from a five-second server-side snapshot.
+Concurrent requests share one in-flight fetch, so upstream traffic depends on the cache TTL
+rather than on how many browsers are open. If Onyx blips, the last good snapshot is served
+instead of failing the page. Search and status filtering run server-side against that
+snapshot, so the client gets a page rather than several hundred kilobytes per poll.
 
 ```json
 POST /api/orders
@@ -151,16 +165,6 @@ the whole thing back, so an account is never left half-updated.
 
 Rejected with `400`: non-integer or non-positive quantities, closed markets, unpriced
 markets, and insufficient funds.
-
-## Live pricing
-
-Prices refresh every three seconds in the UI, served from a five-second server-side
-snapshot. Concurrent requests share a single in-flight fetch, so upstream traffic is a
-function of the cache TTL rather than of how many browsers are open. If Onyx blips, the last
-good snapshot is served rather than failing the page.
-
-Search and filtering run server-side against that snapshot — with ~5,000 markets, shipping
-the full list every three seconds would be several hundred kilobytes per poll.
 
 ## Testing
 
@@ -230,14 +234,21 @@ direct endpoint is IPv6-only and unreachable from Cloud Run.
 
 Out of scope for the time budget, roughly in the order I would add them:
 
-1. **Fill at the ask rather than the bid** — the spread is available and currently ignored
-2. **Sell orders and position closing** — the largest functional gap; needs realized P&L
-3. **Idempotency keys on order submission** — a double-clicked Confirm places two orders
-4. **Server-side price poller with SSE** — decouples upstream rate from client count
-5. **Limit orders** — needs a resting-order model and a matching pass
-6. **Integration and end-to-end tests** — only unit-level tests exist
-7. **Secret Manager** — secrets are Cloud Run environment variables today
-8. **CI pipeline** — no automated build or test gate
+1. **First page load is slow.** The first request after a cold start pages through all 5,046
+   markets before responding, which takes several seconds. Serving page one immediately and
+   filling the rest of the catalog in the background would fix it, as would warming the cache
+   on boot instead of on first request.
+2. **A sport/league filter.** The API accepts a `sport` parameter and returns a `sport` field
+   we already map, but there is no UI control for it. Right now a user searches by market
+   name instead, which is a poor way to answer "show me MLB."
+3. **Fill at the ask rather than the bid.** The spread is available and currently ignored.
+4. **Sell orders and position closing** — the largest functional gap; needs realized P&L.
+5. **Idempotency keys on order submission** — a double-clicked Confirm places two orders.
+6. **Server-side price poller with SSE** — decouples upstream rate from client count.
+7. **Limit orders** — needs a resting-order model and a matching pass.
+8. **Integration and end-to-end tests** — only unit-level tests exist.
+9. **Secret Manager** — secrets are Cloud Run environment variables today.
+10. **CI pipeline** — no automated build or test gate.
 
 ## Notes on the exercise
 
