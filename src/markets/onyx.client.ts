@@ -45,12 +45,25 @@ export class OnyxClient {
     return all;
   }
 
-  /** Single market by symbol — used on the order path to price a fill. */
-  async getMarket(symbol: string): Promise<OnyxMarket | null> {
-    const body = await this.get<OnyxMarket | OnyxMarket[]>(
-      `/markets/${encodeURIComponent(symbol)}`,
-    );
-    if (Array.isArray(body)) return body[0] ?? null;
-    return body ?? null;
+  /**
+   * Live quote for one market, used on the order path.
+   *
+   * `/markets/{symbol}` returns `yes_price: null` — only the list endpoint
+   * populates it — so pricing a fill goes through the quote endpoint instead.
+   * Its `bid_price` is the same figure the list reports as `yes_price`, which
+   * keeps the fill consistent with what the user was shown.
+   */
+  async getQuote(symbol: string): Promise<number | null> {
+    try {
+      const quote = await this.get<{
+        bid_price: number | null;
+        ask_price: number | null;
+        last_price: number | null;
+      }>(`/markets/${encodeURIComponent(symbol)}/prices`);
+      return quote.bid_price ?? quote.last_price ?? null;
+    } catch (err) {
+      this.logger.warn(`Quote lookup failed for ${symbol}: ${String(err)}`);
+      return null;
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { toMarket } from './market.mapper';
+import { noPriceFromYes, toCents, toMarket } from './market.mapper';
 import { Market } from './market.types';
 import { OnyxClient } from './onyx.client';
 
@@ -91,8 +91,19 @@ export class MarketsService {
    * priced from a stale snapshot.
    */
   async getLivePrice(id: string): Promise<Market> {
-    const cached = await this.findById(id);
-    const raw = await this.onyx.getMarket(cached.symbol);
-    return raw ? toMarket(raw) : cached;
+    const market = await this.findById(id);
+    const yesPrice = await this.onyx.getQuote(market.symbol);
+    const yesPriceCents = toCents(yesPrice);
+
+    // If the quote endpoint has nothing for this market, fall back to the
+    // snapshot rather than rejecting an order on a market we just quoted.
+    if (yesPriceCents === null) return market;
+
+    return {
+      ...market,
+      yesPriceCents,
+      noPriceCents: noPriceFromYes(yesPriceCents),
+      tradable: market.status === 'open',
+    };
   }
 }
