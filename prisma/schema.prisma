@@ -1,0 +1,61 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Side {
+  YES
+  NO
+}
+
+model User {
+  id        String     @id @default(cuid())
+  uid       String     @unique
+  email     String
+  /// Paper cash in integer cents. Seeded at $1,000.
+  cashCents Int        @default(100000)
+  createdAt DateTime   @default(now())
+  orders    Order[]
+  positions Position[]
+}
+
+/// One row is both the order and its fill — every order fills instantly, so a
+/// separate Fill entity would model a state this system cannot enter.
+model Order {
+  id             String   @id @default(cuid())
+  userId         String
+  marketId       String
+  marketSymbol   String
+  /// Denormalized so history renders without a round trip to Onyx.
+  marketName     String
+  side           Side
+  quantity       Int
+  fillPriceCents Int
+  totalCents     Int
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model Position {
+  userId         String
+  marketId       String
+  marketSymbol   String
+  marketName     String
+  side           Side
+  quantity       Int
+  /// Average entry is derived as totalCostCents / quantity, never stored,
+  /// so the two can never disagree.
+  totalCostCents Int
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@id([userId, marketId, side])
+}

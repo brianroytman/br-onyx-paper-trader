@@ -31,6 +31,12 @@ body {
 
 .brand { font-weight: 600; }
 .tabs { display: flex; gap: 4px; }
+.spacer { flex: 1; }
+
+.account { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.account input { min-width: auto; padding: 6px 8px; font-size: 13px; }
+.stat { font-size: 13px; font-variant-numeric: tabular-nums; }
+.stat .muted { margin-right: 4px; }
 
 .tab {
   background: transparent;
@@ -109,3 +115,38 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .badge-open { color: var(--green); }
 .badge-closed, .badge-halted { color: var(--muted); }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.ticket {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+  width: 340px;
+}
+
+.ticket h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.ticket-market { margin: 0 0 16px; }
+.ticket .row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+.ticket .row.divider { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 10px; }
+.ticket .num { font-variant-numeric: tabular-nums; }
+.ticket .note { margin: 12px 0; line-height: 1.5; }
+.ticket-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+.toast {
+  background: rgba(29, 158, 117, 0.15);
+  border: 1px solid var(--green);
+  color: var(--green);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}

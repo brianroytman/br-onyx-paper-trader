@@ -10,7 +10,8 @@ COPY client/package*.json ./client/
 RUN npm ci --prefix client
 
 COPY . .
-RUN npm run build --prefix client \
+RUN npx prisma generate \
+ && npm run build --prefix client \
  && npm run build
 
 ENV NODE_ENV=production
