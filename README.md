@@ -64,11 +64,35 @@ NestJS on Cloud Run
       └──▶ Onyx Predictions API  (prices, read-only, never persisted)
 ```
 
+## Market data and live pricing
+
+All 5,046 markets Onyx exposes are browseable. The upstream endpoint pages at 1,000 per
+request and returns a bare array with no total, so the client pages until it gets a short
+one.
+
+Prices refresh on a three-second cycle in the UI, served from a five-second server-side
+snapshot. Concurrent requests share a single in-flight fetch, so upstream traffic is a
+function of the cache TTL rather than of how many browsers are open. If Onyx blips, the
+last good snapshot is served rather than failing the page.
+
+Search and status filtering run server-side against that snapshot. With ~5,000 markets,
+shipping the full list to the browser every three seconds would be several hundred
+kilobytes per poll, so the client receives a filtered page instead.
+
+Two things worth calling out about the upstream data:
+
+- **Prices arrive as probabilities in [0, 1]** with two decimals. They are converted to
+  integer cents at the boundary, so no monetary value is ever a float. `0.29 * 100` is
+  `28.999999999999996` in IEEE 754 — the mapper has a test for exactly that.
+- **Onyx exposes only `yes_price`.** These are binary contracts settling at 100¢, so the NO
+  side is derived as its complement. Many markets return `null` for `yes_price`; those are
+  surfaced as unpriced and are not tradable.
+
 ## Build plan
 
 - [x] Scaffold NestJS API and React client
 - [x] Containerize and deploy to Cloud Run
-- [ ] Integrate and normalize Onyx market data
+- [x] Integrate and normalize Onyx market data
 - [ ] Firebase authentication and Postgres persistence
 - [ ] Transactional order execution
 - [ ] Portfolio valuation and order history
