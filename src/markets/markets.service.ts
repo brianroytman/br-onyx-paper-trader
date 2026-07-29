@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { noPriceFromYes, toCents, toMarket } from './market.mapper';
 import { Market } from './market.types';
 import { OnyxClient } from './onyx.client';
@@ -19,20 +19,26 @@ export interface MarketPage {
 }
 
 @Injectable()
-export class MarketsService {
+export class MarketsService implements OnModuleInit {
+  private readonly logger = new Logger(MarketsService.name);
   private cache: { markets: Market[]; at: number } | null = null;
   private inFlight: Promise<Market[]> | null = null;
 
   constructor(private readonly onyx: OnyxClient) {}
 
   /**
-   * Serves a snapshot at most CACHE_TTL_MS old. Concurrent callers share one
-   * upstream request, so client count never drives Onyx traffic.
+   * Warm the catalog at startup so the first visitor doesn't pay for paging
+   * through ~5,000 markets. Deliberately not awaited — a slow or failing Onyx
+   * must not prevent the app from booting.
    */
-  private async snapshot(): Promise<Market[]> {
-    if (this.cache && Date.now() - this.cache.at < CACHE_TTL_MS) {
-      return this.cache.markets;
-    }
+  onModuleInit() {
+    void this.refresh().catch((err) =>
+      this.logger.warn(`Initial market fetch failed: ${String(err)}`),
+    );
+  }
+
+  /** One upstream fetch at a time, shared by every concurrent caller. */
+  private refresh(): Promise<Market[]> {
     if (this.inFlight) return this.inFlight;
 
     this.inFlight = this.onyx
@@ -46,13 +52,24 @@ export class MarketsService {
         this.inFlight = null;
       });
 
-    try {
-      return await this.inFlight;
-    } catch (err) {
-      // Serve stale data rather than failing the page if Onyx blips.
-      if (this.cache) return this.cache.markets;
-      throw err;
+    return this.inFlight;
+  }
+
+  /**
+   * Stale-while-revalidate. Only the very first call ever blocks; after that a
+   * request always gets an immediate answer and any expired snapshot is
+   * refreshed in the background. A failed refresh leaves the old data in place.
+   */
+  private async snapshot(): Promise<Market[]> {
+    if (!this.cache) return this.refresh();
+
+    if (Date.now() - this.cache.at >= CACHE_TTL_MS) {
+      void this.refresh().catch((err) =>
+        this.logger.warn(`Background refresh failed: ${String(err)}`),
+      );
     }
+
+    return this.cache.markets;
   }
 
   /** Filtering happens server-side so the client receives a small page. */

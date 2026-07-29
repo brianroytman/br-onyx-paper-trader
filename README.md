@@ -137,9 +137,16 @@ Upstream, we read three Onyx endpoints and write to none:
 
 Prices refresh every three seconds in the UI from a five-second server-side snapshot.
 Concurrent requests share one in-flight fetch, so upstream traffic depends on the cache TTL
-rather than on how many browsers are open. If Onyx blips, the last good snapshot is served
-instead of failing the page. Search and status filtering run server-side against that
-snapshot, so the client gets a page rather than several hundred kilobytes per poll.
+rather than on how many browsers are open.
+
+The catalog is warmed at startup and served stale-while-revalidate: only the very first call
+after boot blocks, and an expired snapshot refreshes in the background rather than making a
+request wait. Paging through 5,046 markets takes a few seconds, so doing it on the request
+path would have stalled roughly every other poll. A failed refresh leaves the previous
+snapshot in place instead of failing the page.
+
+Search and status filtering run server-side against that snapshot, so the client gets a page
+rather than several hundred kilobytes per poll.
 
 ```json
 POST /api/orders
@@ -234,14 +241,10 @@ direct endpoint is IPv6-only and unreachable from Cloud Run.
 
 Out of scope for the time budget, roughly in the order I would add them:
 
-1. **First page load is slow.** The first request after a cold start pages through all 5,046
-   markets before responding, which takes several seconds. Serving page one immediately and
-   filling the rest of the catalog in the background would fix it, as would warming the cache
-   on boot instead of on first request.
-2. **A sport/league filter.** The API accepts a `sport` parameter and returns a `sport` field
+1. **A sport/league filter.** The API accepts a `sport` parameter and returns a `sport` field
    we already map, but there is no UI control for it. Right now a user searches by market
    name instead, which is a poor way to answer "show me MLB."
-3. **Fill at the ask rather than the bid.** The spread is available and currently ignored.
+2. **Fill at the ask rather than the bid.** The spread is available and currently ignored.
 4. **Sell orders and position closing** — the largest functional gap; needs realized P&L.
 5. **Idempotency keys on order submission** — a double-clicked Confirm places two orders.
 6. **Server-side price poller with SSE** — decouples upstream rate from client count.
