@@ -8,6 +8,8 @@ fill instantly at the current upstream price.
 is recorded in this application's own database. Onyx is read-only — the source of truth
 for prices, and nothing else.
 
+**Live:** https://br-onyx-paper-trader-564764484340.us-central1.run.app
+
 ## What it does
 
 - **Authentication** — email/password sign-up and login. Each account has its own balance,
@@ -65,7 +67,7 @@ NestJS on Cloud Run
 ## Build plan
 
 - [x] Scaffold NestJS API and React client
-- [ ] Containerize and deploy to Cloud Run
+- [x] Containerize and deploy to Cloud Run
 - [ ] Integrate and normalize Onyx market data
 - [ ] Firebase authentication and Postgres persistence
 - [ ] Transactional order execution
@@ -94,3 +96,16 @@ Production shape — one process serving both, identical to the deployed contain
 ```bash
 npm run build --prefix client && npm run build && node dist/main.js
 ```
+
+## Deployment
+
+Built from the Dockerfile and deployed as a single Cloud Run service:
+
+```bash
+gcloud run deploy br-onyx-paper-trader --source . --allow-unauthenticated --min-instances=1
+```
+
+The image installs both dependency trees, builds the React bundle, compiles the API, and
+runs one Node process that serves the bundle at the root and the API under `/api`.
+
+`--min-instances=1` keeps one warm instance so the first request doesn't pay a cold start.
