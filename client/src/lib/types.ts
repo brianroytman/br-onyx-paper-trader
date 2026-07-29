@@ -3,6 +3,7 @@ export interface Market {
   symbol: string;
   name: string;
   sport: string | null;
+  league: string | null;
   status: 'open' | 'closed' | 'halted';
   expiryDate: string | null;
   yesPriceCents: number | null;
@@ -13,6 +14,7 @@ export interface Market {
 export interface MarketPage {
   markets: Market[];
   total: number;
+  leagues: string[];
   fetchedAt: string;
 }
 

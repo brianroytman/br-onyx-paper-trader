@@ -20,6 +20,8 @@ export interface Market {
   symbol: string;
   name: string;
   sport: string | null;
+  /** Parsed from the symbol; upstream `sport` is "OTHER" for nearly everything. */
+  league: string | null;
   status: MarketStatus;
   expiryDate: string | null;
   /** 1-99, or null when upstream has no price for this market. */

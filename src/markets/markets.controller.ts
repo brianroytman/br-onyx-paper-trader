@@ -9,12 +9,14 @@ export class MarketsController {
   list(
     @Query('q') q?: string,
     @Query('status') status?: string,
+    @Query('league') league?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
     return this.markets.find({
       q,
       status,
+      league,
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
     });

@@ -219,6 +219,11 @@ the browser would add a hop without adding freshness. The server-side cache alre
 upstream traffic independent of client count. A server-side poller fanning out over SSE is
 the better architecture at scale and is the natural next step.
 
+**League is parsed from the symbol.** Upstream reports `sport: "OTHER"` for essentially every
+market, so filtering on it is useless. The symbol encodes the league —
+`NX.F.OPT.MLB-00001-2026.O.1.10` — so that is parsed at the mapping boundary and the filter's
+options are derived from the data rather than hardcoded. Currently MLB and WNBA.
+
 **NO price is derived, not fetched.** Onyx exposes only `yes_price`. These are binary
 contracts settling at 100¢, so NO is its complement. Many markets return `null`; those are
 surfaced as unpriced and are not tradable.
@@ -241,10 +246,7 @@ direct endpoint is IPv6-only and unreachable from Cloud Run.
 
 Out of scope for the time budget, roughly in the order I would add them:
 
-1. **A sport/league filter.** The API accepts a `sport` parameter and returns a `sport` field
-   we already map, but there is no UI control for it. Right now a user searches by market
-   name instead, which is a poor way to answer "show me MLB."
-2. **Fill at the ask rather than the bid.** The spread is available and currently ignored.
+1. **Fill at the ask rather than the bid.** The spread is available and currently ignored.
 4. **Sell orders and position closing** — the largest functional gap; needs realized P&L.
 5. **Idempotency keys on order submission** — a double-clicked Confirm places two orders.
 6. **Server-side price poller with SSE** — decouples upstream rate from client count.

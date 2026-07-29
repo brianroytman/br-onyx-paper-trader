@@ -2,6 +2,7 @@ import {
   noPriceFromYes,
   toCents,
   toDisplayName,
+  toLeague,
   toMarket,
   toStatus,
 } from './market.mapper';
@@ -77,6 +78,19 @@ describe('toDisplayName', () => {
     expect(toDisplayName('Pro Baseball Champion 2026 ; Dodgers ;')).toBe(
       'Pro Baseball Champion 2026 · Dodgers',
     );
+  });
+});
+
+describe('toLeague', () => {
+  it('parses the league out of the symbol', () => {
+    expect(toLeague('NX.F.OPT.MLB-00001-2026.O.1.10')).toBe('MLB');
+    expect(toLeague('NX.F.OPT.NFL-00007-260901-M.O.1.1')).toBe('NFL');
+  });
+
+  it('returns null for a symbol it cannot parse', () => {
+    expect(toLeague('')).toBeNull();
+    expect(toLeague(null)).toBeNull();
+    expect(toLeague('NX.F')).toBeNull();
   });
 });
 

@@ -39,6 +39,18 @@ export function toDisplayName(name: string | null | undefined): string {
     .join(' · ');
 }
 
+/**
+ * Upstream reports `sport: "OTHER"` for essentially everything, but the symbol
+ * encodes the league: NX.F.OPT.MLB-00001-2026.O.1.10 -> MLB.
+ */
+export function toLeague(symbol: string | null | undefined): string | null {
+  if (!symbol) return null;
+  const segment = symbol.split('.')[3];
+  if (!segment) return null;
+  const league = segment.split('-')[0]?.trim().toUpperCase();
+  return league && /^[A-Z0-9]{2,6}$/.test(league) ? league : null;
+}
+
 export function toMarket(raw: OnyxMarket): Market {
   const status = toStatus(raw.status);
   const yesPriceCents = toCents(raw.yes_price);
@@ -48,6 +60,7 @@ export function toMarket(raw: OnyxMarket): Market {
     symbol: raw.symbol,
     name: toDisplayName(raw.name),
     sport: raw.sport ?? null,
+    league: toLeague(raw.symbol),
     status,
     expiryDate: raw.expiry_date ?? null,
     yesPriceCents,

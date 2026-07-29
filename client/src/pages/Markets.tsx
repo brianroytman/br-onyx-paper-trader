@@ -15,22 +15,24 @@ interface Props {
 export function Markets({ authed = false, cashCents = null, onFilled }: Props) {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('open');
+  const [league, setLeague] = useState('all');
   const [page, setPage] = useState<MarketPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   // Refs so the interval always reads current filters without resubscribing.
-  const filters = useRef({ query, status });
-  filters.current = { query, status };
+  const filters = useRef({ query, status, league });
+  filters.current = { query, status, league };
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      const { query: q, status: s } = filters.current;
+      const { query: q, status: s, league: l } = filters.current;
       const params = new URLSearchParams({ status: s, limit: String(PAGE_SIZE) });
       if (q) params.set('q', q);
+      if (l && l !== 'all') params.set('league', l);
 
       try {
         const res = await fetch(`/api/markets?${params}`);
@@ -69,6 +71,14 @@ export function Markets({ authed = false, cashCents = null, onFilled }: Props) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search markets"
         />
+        <select value={league} onChange={(e) => setLeague(e.target.value)}>
+          <option value="all">All leagues</option>
+          {(page?.leagues ?? []).map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="open">Open</option>
           <option value="closed">Closed</option>

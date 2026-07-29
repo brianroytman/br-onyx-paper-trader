@@ -8,6 +8,7 @@ const CACHE_TTL_MS = 5_000;
 export interface MarketQuery {
   q?: string;
   status?: string;
+  league?: string;
   limit?: number;
   offset?: number;
 }
@@ -15,6 +16,8 @@ export interface MarketQuery {
 export interface MarketPage {
   markets: Market[];
   total: number;
+  /** Every league present upstream, so the UI filter needs no hardcoded list. */
+  leagues: string[];
   fetchedAt: string;
 }
 
@@ -77,9 +80,11 @@ export class MarketsService implements OnModuleInit {
     const all = await this.snapshot();
     const q = query.q?.trim().toLowerCase();
     const status = query.status?.trim().toLowerCase();
+    const league = query.league?.trim().toUpperCase();
 
     const filtered = all.filter((m) => {
       if (status && status !== 'all' && m.status !== status) return false;
+      if (league && league !== 'ALL' && m.league !== league) return false;
       if (q && !m.name.toLowerCase().includes(q) && !m.symbol.toLowerCase().includes(q)) {
         return false;
       }
@@ -92,6 +97,7 @@ export class MarketsService implements OnModuleInit {
     return {
       markets: filtered.slice(offset, offset + limit),
       total: filtered.length,
+      leagues: [...new Set(all.map((m) => m.league).filter((l): l is string => !!l))].sort(),
       fetchedAt: new Date(this.cache?.at ?? Date.now()).toISOString(),
     };
   }
